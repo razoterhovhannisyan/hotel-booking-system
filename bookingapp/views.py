@@ -8,7 +8,7 @@ from rest_framework import permissions
 # Create your views here.
 
 
-class RoomListView(APIView):#works, tested
+class RoomListView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
