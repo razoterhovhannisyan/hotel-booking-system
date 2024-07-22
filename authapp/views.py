@@ -11,7 +11,7 @@ from rest_framework import permissions
 
 
 
-class RegisterUserView(APIView):#works
+class RegisterUserView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -24,7 +24,7 @@ class RegisterUserView(APIView):#works
 
 
 
-class LoginUserView(APIView):#works
+class LoginUserView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -49,7 +49,7 @@ class LoginUserView(APIView):#works
 
 
 
-class LogoutUserView(APIView):#works
+class LogoutUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -59,7 +59,7 @@ class LogoutUserView(APIView):#works
 
 
 
-class UpdatePasswordView(APIView):#works
+class UpdatePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request):
