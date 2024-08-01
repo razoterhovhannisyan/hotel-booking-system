@@ -1,6 +1,6 @@
 from django.db import models
 from authapp.models import User
-# Create your models here.
+
 
 class Room(models.Model):
     number = models.IntegerField(unique=True)
@@ -11,13 +11,23 @@ class Room(models.Model):
         return f"Room number: {self.number} id - {self.id}"
 
 
-
 class Booking(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='bookings')
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='bookings'
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE,
+        related_name='bookings'
+    )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_cancelled = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.room} - {self.user.first_name} {self.user.last_name} id - {self.id}"
+        return (
+            f"{self.room} - "
+            f"{self.user.first_name} {self.user.last_name} id - {self.id}"
+        )

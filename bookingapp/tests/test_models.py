@@ -2,6 +2,8 @@ from django.test import TestCase
 from bookingapp import models as booking_models
 from authapp import models as auth_models
 from datetime import date
+from datetime import datetime
+from django.utils import timezone
 
 
 class RoomModelTest(TestCase):
@@ -39,8 +41,8 @@ class BookingModelTest(TestCase):
         self.booking = booking_models.Booking.objects.create(
             user=self.user,
             room=self.room,
-            start_date=date(2024, 7, 20),
-            end_date=date(2024, 7, 27),
+            start_date=timezone.make_aware(datetime(2024, 7, 20, 12, 0, 0)),
+            end_date=timezone.make_aware(datetime(2024, 7, 27, 12, 0, 0)),
             is_cancelled=False
         )
 
@@ -50,6 +52,12 @@ class BookingModelTest(TestCase):
     def test_booking_fields(self):
         self.assertEqual(self.booking.user, self.user)
         self.assertEqual(self.booking.room, self.room)
-        self.assertEqual(self.booking.start_date, date(2024, 7, 20))
-        self.assertEqual(self.booking.end_date, date(2024, 7, 27))
+        self.assertEqual(
+            self.booking.start_date,
+            timezone.make_aware(datetime(2024, 7, 20, 12, 0, 0))
+        )
+        self.assertEqual(
+            self.booking.end_date,
+            timezone.make_aware(datetime(2024, 7, 27, 12, 0, 0))
+        )
         self.assertFalse(self.booking.is_cancelled)
