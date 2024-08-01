@@ -1,33 +1,37 @@
-from django.db.models import Q
 from rest_framework.views import APIView
-from . import models
-from . import serializers
+from . import models, serializers, filters
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import permissions
-# Create your views here.
+from rest_framework import status, permissions, generics
+from django_filters.rest_framework import DjangoFilterBackend
 
 
-class RoomListView(APIView):
+class RoomListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request):
-        rooms = models.Room.objects.all()
-        serializer = serializers.RoomListSerializer(rooms, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    queryset = models.Room.objects.all()
+    serializer_class = serializers.RoomListSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = filters.RoomFilter
 
 
-class RoomDetailView(APIView):
+    # def get(self, request):
+    #     rooms = models.Room.objects.all()
+    #     serializer = serializers.RoomListSerializer(rooms, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RoomDetailView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
-
+    
     def get(self, request, pk):
         try:
             room = models.Room.objects.get(id=pk)
             serializer = serializers.RoomListSerializer(room)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except models.Room.DoesNotExist:
-            return Response({'error':'Room not found'}, status=status.HTTP_404_NOT_FOUND)
-
+            return Response(
+                {'error': 'Room not found'}, status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class RoomBookingView(APIView):
@@ -35,7 +39,7 @@ class RoomBookingView(APIView):
 
     def post(self, request):
         user = request.user
-        data=request.data.copy()
+        data = request.data.copy()
         data['user'] = user.id
 
         serializer = serializers.BookingSerializer(data=data)
@@ -43,61 +47,83 @@ class RoomBookingView(APIView):
             serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-
-class GetBookingView(APIView):
+class GetBookingView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.BookingSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = filters.BookingFilter
 
-    def get(self, request):
-        user = request.user
-        bookings = models.Booking.objects.filter(user=user)
-        serializer = serializers.BookingSerializer(bookings, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        user = self.request.user
+        return models.Booking.objects.filter(user=user)
+
+    # def get(self, request):
+    #     user = request.user
+    #     bookings = models.Booking.objects.filter(user=user)
+    #     serializer = serializers.BookingSerializer(bookings, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
-
-class RoomFilterSortView(APIView):
+class RoomFilterSortView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.RoomListSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = filters.RoomFilter
 
-    def get(self, request, format=None):
-        rooms = models.Room.objects.all()
-
-        min_price = request.query_params.get('min_price')
-        max_price = request.query_params.get('max_price')
-        if min_price is not None:
-            rooms = rooms.filter(cost_per_day__gte=min_price)
-        if max_price is not None:
-            rooms = rooms.filter(cost_per_day__lte=max_price)
-
-        capacity = request.query_params.get('capacity')
-        if capacity is not None:
-            rooms = rooms.filter(capacity=capacity)
-
-        sort_by = request.query_params.get('sort_by')
+    def get_queryset(self):
+        queryset = models.Room.objects.all()
+        sort_by = self.request.query_params.get('sort_by')
         if sort_by == 'price':
-            rooms = rooms.order_by('cost_per_day')
+            queryset = queryset.order_by('cost_per_day')
         elif sort_by == 'capacity':
-            rooms = rooms.order_by('capacity')
+            queryset = queryset.order_by('capacity')
+        return queryset
 
-        serializer = serializers.RoomListSerializer(rooms, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
+    # def get(self, request, format=None):
+    #     rooms = models.Room.objects.all()
+    #
+    #     min_price = request.query_params.get('min_price')
+    #     max_price = request.query_params.get('max_price')
+    #     if min_price is not None:
+    #         rooms = rooms.filter(cost_per_day__gte=min_price)
+    #     if max_price is not None:
+    #         rooms = rooms.filter(cost_per_day__lte=max_price)
+    #
+    #     capacity = request.query_params.get('capacity')
+    #     if capacity is not None:
+    #         rooms = rooms.filter(capacity=capacity)
+    #
+    #     sort_by = request.query_params.get('sort_by')
+    #     if sort_by == 'price':
+    #         rooms = rooms.order_by('cost_per_day')
+    #     elif sort_by == 'capacity':
+    #         rooms = rooms.order_by('capacity')
+    #
+    #     serializer = serializers.RoomListSerializer(rooms, many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RoomAvailabilityView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        serializer = serializers.RoomAvailabilitySerializer(data=request.query_params)
+        serializer = serializers.RoomAvailabilitySerializer(
+            data=request.query_params
+        )
         if serializer.is_valid():
             start_date = serializer.validated_data['start_date']
             end_date = serializer.validated_data['end_date']
 
             if end_date <= start_date:
-                return Response({'error':'end_date must be after start_date'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'end_date must be after start_date'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             booked_rooms = models.Booking.objects.filter(
                 start_date__lt=end_date,
@@ -119,7 +145,6 @@ class RoomAvailabilityView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class CancelBookingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -127,18 +152,33 @@ class CancelBookingView(APIView):
         try:
             booking = models.Booking.objects.get(id=pk)
         except models.Booking.DoesNotExist:
-            return Response({'detail':'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'detail': 'Booking not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         if request.user != booking.user:
-            return Response({'detail':'You dont have permission to cancel this book'}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {'detail': 'You dont have permission to cancel this book'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        serializer = serializers.CancelBookingSerializer(booking, data=request.data)
+        serializer = serializers.CancelBookingSerializer(
+            booking,
+            data=request.data
+        )
         if serializer.is_valid():
             is_cancelled = serializer.validated_data.get('is_cancelled')
             if is_cancelled:
                 booking.delete()
-                return Response({'detail': 'Booking cancelled successfully'}, status=status.HTTP_200_OK)
+                return Response(
+                    {'detail': 'Booking cancelled successfully'},
+                    status=status.HTTP_200_OK
+                )
             else:
-                return Response({'detail':'Booking not cancelled'}, status=status.HTTP_200_OK)
+                return Response(
+                    {'detail': 'Booking not cancelled'},
+                    status=status.HTTP_200_OK
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
