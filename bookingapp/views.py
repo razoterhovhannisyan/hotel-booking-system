@@ -14,15 +14,9 @@ class RoomListView(generics.ListAPIView):
     filterset_class = filters.RoomFilter
 
 
-    # def get(self, request):
-    #     rooms = models.Room.objects.all()
-    #     serializer = serializers.RoomListSerializer(rooms, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 class RoomDetailView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
-    
+
     def get(self, request, pk):
         try:
             room = models.Room.objects.get(id=pk)
@@ -62,12 +56,6 @@ class GetBookingView(generics.ListAPIView):
         user = self.request.user
         return models.Booking.objects.filter(user=user)
 
-    # def get(self, request):
-    #     user = request.user
-    #     bookings = models.Booking.objects.filter(user=user)
-    #     serializer = serializers.BookingSerializer(bookings, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class RoomFilterSortView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -83,29 +71,6 @@ class RoomFilterSortView(generics.ListAPIView):
         elif sort_by == 'capacity':
             queryset = queryset.order_by('capacity')
         return queryset
-
-    # def get(self, request, format=None):
-    #     rooms = models.Room.objects.all()
-    #
-    #     min_price = request.query_params.get('min_price')
-    #     max_price = request.query_params.get('max_price')
-    #     if min_price is not None:
-    #         rooms = rooms.filter(cost_per_day__gte=min_price)
-    #     if max_price is not None:
-    #         rooms = rooms.filter(cost_per_day__lte=max_price)
-    #
-    #     capacity = request.query_params.get('capacity')
-    #     if capacity is not None:
-    #         rooms = rooms.filter(capacity=capacity)
-    #
-    #     sort_by = request.query_params.get('sort_by')
-    #     if sort_by == 'price':
-    #         rooms = rooms.order_by('cost_per_day')
-    #     elif sort_by == 'capacity':
-    #         rooms = rooms.order_by('capacity')
-    #
-    #     serializer = serializers.RoomListSerializer(rooms, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RoomAvailabilityView(APIView):

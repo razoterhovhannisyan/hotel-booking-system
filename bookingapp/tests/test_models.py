@@ -1,7 +1,6 @@
 from django.test import TestCase
 from bookingapp import models as booking_models
 from authapp import models as auth_models
-from datetime import date
 from datetime import datetime
 from django.utils import timezone
 
