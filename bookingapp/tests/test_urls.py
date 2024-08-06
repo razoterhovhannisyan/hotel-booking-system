@@ -13,8 +13,9 @@ class TestUrls(TestCase):
         self.assertEquals(resolve(url).func.view_class, views.RoomDetailView)
 
     def test_bookroom_url(self):
-        url = reverse('book-room')
-        self.assertEquals(resolve(url).func.view_class, views.RoomBookingView)
+        url = reverse('bookroom-list')
+        viewset = resolve(url).func.cls
+        self.assertEquals(viewset, views.RoomBookingView)
 
     def test_mybookings_url(self):
         url = reverse('my-bookings')
@@ -27,13 +28,11 @@ class TestUrls(TestCase):
         )
 
     def test_availabilityrooms_url(self):
-        url = reverse('availability-rooms')
-        self.assertEquals(
-            resolve(url).func.view_class, views.RoomAvailabilityView
-        )
+        url = reverse('availabilityrooms-list')
+        viewset = resolve(url).func.cls
+        self.assertEquals(viewset, views.RoomAvailabilityView)
 
     def test_cancelbook_url(self):
-        url = reverse('cancel-book', args=[1])
-        self.assertEquals(
-            resolve(url).func.view_class, views.CancelBookingView
-        )
+        url = reverse('cancelbook-detail', args=[1])
+        viewset = resolve(url).func.cls
+        self.assertEquals(viewset, views.CancelBookingView)

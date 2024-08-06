@@ -12,6 +12,12 @@ class RoomFilter(django_filters.FilterSet):
         lookup_expr='lte'
     )
     capacity = django_filters.NumberFilter(field_name='capacity')
+    ordering = django_filters.OrderingFilter(
+        fields=(
+            ('cost_per_day', 'price'),
+            ('capacity', 'capacity'),
+        )
+    )
 
     class Meta:
         model = models.Room
