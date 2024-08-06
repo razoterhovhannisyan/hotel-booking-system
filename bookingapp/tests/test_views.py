@@ -85,7 +85,10 @@ class RoomDetailViewTest(APITestCase):
         )
         response = self.client.get(reverse('room-details', args=[999]))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data, {'error': 'Room not found'})
+        self.assertEqual(
+            response.data,
+            {'detail': 'No Room matches the given query.'}
+        )
 
 
 class GetBookingView(APITestCase):
@@ -219,7 +222,7 @@ class RoomFilterSortTest(APITestCase):
             HTTP_AUTHORIZATION=f'Bearer {self.access_token}'
         )
         response = self.client.get(
-            reverse('room-filter'), {'sort_by': 'capacity'}
+            reverse('room-filter'), {'ordering': 'capacity'}
         )
         expected_rooms = [self.room_1, self.room_3, self.room_2]
         expected_data = serializers.RoomListSerializer(
@@ -293,7 +296,7 @@ class RoomAvailabilityTest(APITestCase):
             datetime(2024, 7, 30, 12, 0, 0)
         ).isoformat()
         response = self.client.get(
-            reverse('availability-rooms'),
+            reverse('availabilityrooms-list'),
             {'start_date': start_date, 'end_date': end_date}
         )
         expected_data = [{'number': self.room_1.number}]
@@ -311,7 +314,7 @@ class RoomAvailabilityTest(APITestCase):
             datetime(2024, 7, 30, 12, 0, 0)
         ).isoformat()
         response = self.client.get(
-            reverse('availability-rooms'),
+            reverse('availabilityrooms-list'),
             {'start_date': start_date, 'end_date': end_date}
         )
         expected_data = []
@@ -323,7 +326,7 @@ class RoomAvailabilityTest(APITestCase):
             HTTP_AUTHORIZATION=f'Bearer {self.access_token}'
         )
         response = self.client.get(
-            reverse('availability-rooms'),
+            reverse('availabilityrooms-list'),
             {'start_date': 'invalid-date', 'end_date': 'invalid-date'}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

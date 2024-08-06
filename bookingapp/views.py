@@ -1,37 +1,28 @@
-from rest_framework.views import APIView
 from . import models, serializers, filters
 from rest_framework.response import Response
-from rest_framework import status, permissions, generics
+from rest_framework import status, permissions, generics, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 
 
 class RoomListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
-
     queryset = models.Room.objects.all()
     serializer_class = serializers.RoomListSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = filters.RoomFilter
 
 
-class RoomDetailView(generics.ListAPIView):
+class RoomDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
-
-    def get(self, request, pk):
-        try:
-            room = models.Room.objects.get(id=pk)
-            serializer = serializers.RoomListSerializer(room)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except models.Room.DoesNotExist:
-            return Response(
-                {'error': 'Room not found'}, status=status.HTTP_404_NOT_FOUND
-            )
+    queryset = models.Room.objects.all()
+    serializer_class = serializers.RoomListSerializer
 
 
-class RoomBookingView(APIView):
+class RoomBookingView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def create(self, request):
         user = request.user
         data = request.data.copy()
         data['user'] = user.id
@@ -64,31 +55,19 @@ class RoomFilterSortView(generics.ListAPIView):
     filterset_class = filters.RoomFilter
 
     def get_queryset(self):
-        queryset = models.Room.objects.all()
-        sort_by = self.request.query_params.get('sort_by')
-        if sort_by == 'price':
-            queryset = queryset.order_by('cost_per_day')
-        elif sort_by == 'capacity':
-            queryset = queryset.order_by('capacity')
-        return queryset
+        return models.Room.objects.all()
 
 
-class RoomAvailabilityView(APIView):
+class RoomAvailabilityView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
+    def list(self, request):
         serializer = serializers.RoomAvailabilitySerializer(
             data=request.query_params
         )
         if serializer.is_valid():
             start_date = serializer.validated_data['start_date']
             end_date = serializer.validated_data['end_date']
-
-            if end_date <= start_date:
-                return Response(
-                    {'error': 'end_date must be after start_date'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
 
             booked_rooms = models.Booking.objects.filter(
                 start_date__lt=end_date,
@@ -97,23 +76,19 @@ class RoomAvailabilityView(APIView):
             ).values_list('room_id', flat=True)
 
             available_rooms = models.Room.objects.exclude(id__in=booked_rooms)
-
             available_rooms_data = [
-                {
-                    'number': room.number,
-                }
+                {'number': room.number}
                 for room in available_rooms
             ]
-
             return Response(available_rooms_data, status=status.HTTP_200_OK)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CancelBookingView(APIView):
+class CancelBookingView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, pk):
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk):
         try:
             booking = models.Booking.objects.get(id=pk)
         except models.Booking.DoesNotExist:
@@ -127,7 +102,6 @@ class CancelBookingView(APIView):
                 {'detail': 'You dont have permission to cancel this book'},
                 status=status.HTTP_403_FORBIDDEN
             )
-
         serializer = serializers.CancelBookingSerializer(
             booking,
             data=request.data
